@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:webflow="http://www.springframework.org/schema/webflow-config" 
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:security="http://www.springframework.org/schema/security"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/mvc
+    http://www.springframework.org/schema/mvc/spring-mvc.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd
+    http://www.springframework.org/schema/security
+    http://www.springframework.org/schema/security/spring-security.xsd
+    http://www.springframework.org/schema/webflow-config
+    http://www.springframework.org/schema/webflow-config/spring-webflow-config.xsd">
+     
+      <context:component-scan base-package="com.letzchaat.controller" />
+	<context:component-scan base-package="com.letzchaat.model" />
+	<context:component-scan base-package="com.letzchaat.service" />
+	<context:component-scan base-package="com.letzchaat.dao" />
+	<context:component-scan base-package="com" />
+	<mvc:annotation-driven />
+
+	<!--Creating datasource for h2 database -->
+	<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName" value="org.h2.Driver" />
+		<property name="url" value="jdbc:h2:tcp://localhost/~/chat" />
+		<property name="username" value="sa" />
+		<property name="password" value="" />
+	</bean>
+	<!--Object created for sessionfactory -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="packagesToScan">
+			<list>
+				<value>com.letzchaat</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.H2Dialect</prop>
+
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+
+				<prop key="hibernate.show_sql">true</prop>
+				
+				</props>
+		</property>
+		
+	</bean>
+	<!--Object created for transaction manager -->
+	 <tx:annotation-driven/>
+	<bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	<property name="maxUploadSize" value="5242880"/>
+	</bean>
+	
+	<!-- security -->
+	 <security:http auto-config="true">
+        <security:intercept-url pattern="/admin/**" access="hasRole('ROLE_ADMIN')" />
+        <security:intercept-url pattern="/user/**" access="hasRole('ROLE_USER')" />
+        <security:intercept-url pattern="/Collaborative/**" access="hasRole({'ROLE_USER','ROLE_ADMIN'})" />
+        <security:form-login
+            login-page="/login"
+            default-target-url="/index"
+            authentication-failure-url="/login?error"
+            username-parameter="username"
+            password-parameter="password" />
+        <security:logout
+            logout-success-url="/login?logout" />
+            <security:csrf disabled="true"/>
+    </security:http>
+
+ <security:authentication-manager>
+        <security:authentication-provider>
+            <security:jdbc-user-service data-source-ref="dataSource"
+                                        authorities-by-username-query="SELECT u1.username,u2.role from userrole u2,users u1 WHERE u1.usersid=u2.roleid and u1.username = ?"
+                                        users-by-username-query="SELECT username, password, enabled from users WHERE username = ?" />
+        </security:authentication-provider>
+    </security:authentication-manager> 
+   
+
+<!-- Validation object creation-->
+<bean id="studentValidator" class="com.letzchaat.validator.StudentValidator"/>
+<bean id="studAddressValidator" class="com.letzchaat.validator.StudAddressValidator"/>
+<bean id="studentInfoValidator" class="com.letzchaat.validator.StudentInfoValidator"/>
+<bean id="forumInfoValidator" class="com.letzchaat.validator.ForumInfoValidator"/>
+<bean id="blogInfoValidator" class="com.letzchaat.validator.BlogInfoValidator"/>
+	
+<!-- Mail information -->
+
+ <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="smtp.gmail.com" />
+        <property name="port" value="587" />
+        <property name="username" value="sanarut8@gmail.com" />
+        <property name="password" value="black6arut6black" />
+        <property name="javaMailProperties">
+            <props>
+                 <prop key="mail.transport.protocol">smtp</prop>
+                 <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.smtp.starttls.enable">true</prop>
+              <prop key="mail.debug">true</prop> 
+              
+                
+            </props>
+        </property>
+    </bean>
+     
+  
+     
+    <bean
+        class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <property name="exceptionMappings">
+            <props>
+                <prop key="java.lang.Exception">errPage</prop>
+            </props>
+        </property>
+    </bean> 
+
+	
+
+ </beans>
